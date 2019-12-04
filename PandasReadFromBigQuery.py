@@ -26,18 +26,16 @@ def transformation(dataframe_ss,dataframe_loc, dataframe_sid):
     filter_values = ['S','X','R119']
     dataframe_ss = dataframe_ss[dataframe_ss['SJCd'].str.contains('|'.join(filter_values), na=False)]
     dataframe_ss.reset_index(inplace = True)
+    
+    df_loc = dataframe_loc[['LocId','LocNo','Level6Cd']]
+    df_ss = dataframe_ss[['RevenueLocNo','BusinessUnitCd']]
+    df_loc = df_loc.rename(columns={'LocNo':'RevenueLocNo','Level6Cd':'BusinessUnitCd'})
+    df_id = pd.merge(df_loc,df_ss,on=['RevenueLocNo', 'BusinessUnitCd'])
+    newData['LocId'] = df_id['LocId']
+    
     newData['TimeDayId'] = dataframe_ss['FinancialDayDt'].str.replace('-','')
     
-    
-    locid = []
-    for i,x in dataframe_ss[['RevenueLocNo','BusinessUnitCd']].iterrows():
-        for i_loc,x_loc in dataframe_loc[['LocNo','Level6Cd']].iterrows():
-            if (x.RevenueLocNo==x_loc.LocNo) and (x.BusinessUnitCd == x_loc.Level6Cd):
-                locid.append(dataframe_loc.at[i_loc,'LocId'])
-            else:
-                locid.append(0)
-    newData['locId'] = locid
-    
+    dataframe_ss.reset_index(inplace = True)
     dataframe_ss['Amount'] = dataframe_ss['Amount'].astype('float')
     net_amount = []
     i = 0
@@ -76,8 +74,10 @@ def transformation(dataframe_ss,dataframe_loc, dataframe_sid):
             if(r==c):
                 SourceSystemId.append(dataframe_sid.at[idx,'SourceSystemId'])
     newData['SourceSystemId'] = SourceSystemId
-        
     
+    
+    
+    newData=newData.groupby(['locId','TimeDayId','SourceSystemId'])
     return newData
 
 
